@@ -1,0 +1,2774 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Reef Bleaching – Tiles (p5.js)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiny5&display=swap">
+  <!-- p5.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"></script>
+  <!-- 스케치 -->
+  <script src="sketch.js" defer></script>
+  <style>
+    :root {
+      --cursor-default: url('Cursor/Vector_Defult.png') 0 0, auto;
+      --cursor-click: url('Cursor/Vector_Click.png') 0 0, auto;
+    }
+    html, body { margin:0; padding:0; background:var(--Background-color, #5599EC); color:#0a0a0a;
+      font-family: ui-sans-serif, system-ui, Apple SD Gothic Neo, Pretendard, Segoe UI, Roboto; overflow:hidden; }
+    html, body, .icon-grid, .desktop-icon, .desktop-icon *, .desktop-icon button, .desktop-icon label {
+      cursor: var(--cursor-default);
+    }
+    body.cursor-click,
+    body.cursor-click * {
+      cursor: var(--cursor-click) !important;
+    }
+    canvas { display:block; margin:0 auto; }
+    canvas {
+      position:absolute;
+      inset:0;
+      z-index:0;
+    }
+    .desktop-wallpaper {
+      min-height:100vh;
+      background:var(--Background-color, #5599EC);
+      padding:80px 24px 40px;
+      position:relative;
+      overflow:hidden;
+    }
+    .icon-grid {
+      position:absolute;
+      inset:0;
+      padding:44px 24px 24px;
+      z-index:5;
+    }
+    .desktop-icon {
+      position:absolute;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      width:112px;
+      text-align:center;
+      user-select:none;
+    }
+    .desktop-icon button {
+      background:transparent;
+      border:none;
+      padding:0;
+      cursor:pointer;
+      width:80px;
+      height:80px;
+      aspect-ratio:1/1;
+      touch-action:none;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:0;
+    }
+    .desktop-icon button:focus-visible {
+      outline:3px solid rgba(255,255,255,0.8);
+      outline-offset:6px;
+    }
+    .desktop-icon img {
+      width:68px;
+      height:68px;
+      display:block;
+      object-fit:contain;
+    }
+    .desktop-icon button:active,
+    .desktop-icon button[aria-pressed="true"] {
+      border-radius:4px;
+      border:1px solid #000;
+      background:#366399;
+      opacity: 0.5;
+    }
+    .desktop-icon label {
+      display:flex;
+      margin:0;
+      max-width:112px;
+      min-height:14px;
+      max-height:55px;
+      padding:2px;
+      justify-content:center;
+      align-items:flex-start;
+      gap:10px;
+      border-radius:4px;
+      color:#FFF;
+      text-align:center;
+      text-shadow:0 2px 25px #000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:12px;
+      font-style:normal;
+      font-weight:510;
+      line-height:16px;
+      background:transparent;
+    }
+    .desktop-icon button:active + label,
+    .desktop-icon button[aria-pressed="true"] + label {
+      background:var(--d-9-d-9-d-9, #6F00FF);
+    }
+    .context-menu {
+      position:absolute;
+      display:none;
+      width:159px;
+      height:32px;
+      padding:10px 8px;
+      box-sizing:border-box;
+      align-items:center;
+      gap:32px;
+      border-radius:6px;
+      border:1px solid #000;
+      background:#FAFAFA;
+      box-shadow:-2px -2px 4px 0 rgba(0, 0, 0, 0.25) inset;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:12px;
+      font-weight:510;
+      line-height:14px;
+      color:#000;
+      z-index:9999;
+      pointer-events:auto;
+    }
+    .context-menu:hover {
+      background:var(--d-9-d-9-d-9, #6F00FF);
+      box-shadow:-2px -2px 4px 0 rgba(0, 0, 0, 0.25) inset;
+      border:1px solid #000;
+      color:#FFF;
+    }
+    .context-menu .label {
+      flex:1;
+      text-align:center;
+    }
+    .context-menu .shortcut {
+      text-align:center;
+    }
+    .gauge-container {
+      position:fixed;
+      left:50%;
+      bottom:36px;
+      transform:translateX(-50%);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      pointer-events:none;
+      z-index:9999;
+    }
+    .gauge-wrap {
+      position:relative;
+      display:flex;
+      width:1399px;
+      height:10px;
+      justify-content:center;
+      align-items:flex-start;
+      gap:0;
+      pointer-events:none;
+      overflow:hidden;
+    }
+    .gauge-segment {
+      flex:1 1 auto;
+      height:10px;
+      opacity:0.5;
+      background:#FFF;
+      border-radius:5px;
+    }
+    .gauge-overlay {
+      position:absolute;
+      inset:0;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      transform-origin:left center;
+      transform:scaleX(var(--hp-ratio, 1));
+      pointer-events:none;
+    }
+    .gauge-overlay .gauge-segment {
+      background:var(--Yellow, #FFE100);
+      opacity:0.5;
+      border-radius:5px;
+    }
+    .gauge-label {
+      color:#FFF;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:14px;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+    /* SVG 희색화용 클래스 */
+    .bleached {
+      fill:#ffffff !important;
+      opacity:1 !important;
+    }
+    .center-stack {
+      position:absolute;
+      top:calc(50% - 40px);
+      left:50%;
+      transform:translate(-50%, -50%);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      pointer-events:none;
+      z-index:3;
+    }
+    .center-stack #svg-holder {
+      width:min(180vw, 1920px);
+      max-height:180vh;
+      pointer-events:none;
+    }
+    .center-stack svg {
+      width:100%;
+      height:100%;
+      display:block;
+      object-fit:contain;
+      pointer-events:none;
+    }
+    .preview-backdrop {
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,0.45);
+      backdrop-filter:blur(3px);
+      z-index:12000;
+    }
+    .preview-card {
+      display:inline-flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      border-radius:6px;
+      border:1px solid #000;
+      background:rgba(255,255,255,0.70);
+      box-shadow:-2px -2px 4px 0 rgba(0,0,0,0.25) inset;
+      backdrop-filter:blur(3px);
+      min-width:560px;
+      max-width:720px;
+      gap:0;
+      overflow:hidden;
+    }
+    .preview-header {
+      display:flex;
+      height:36px;
+      padding:10px 16px;
+      align-items:center;
+      justify-content:flex-start;
+      gap:10px;
+      align-self:stretch;
+      background:rgba(217,217,217,0);
+      box-sizing:border-box;
+    }
+    .preview-header button {
+      background:none;
+      border:none;
+      padding:0;
+      cursor:pointer;
+    }
+    .preview-header img {
+      width:13px;
+      height:13px;
+      display:block;
+    }
+    .preview-body {
+      display:flex;
+      padding:20px 30px;
+      align-items:center;
+      gap:30px;
+      align-self:stretch;
+      background:rgba(217,217,217,0);
+    }
+    .caption-btn {
+      position:fixed;
+      top:30px;
+      right: 30px;
+      background:none;
+      border:none;
+      padding:0;
+      cursor:pointer;
+      z-index:11000;
+    }
+    .caption-btn img {
+      width:32px;
+      height:32px;
+      display:block;
+    }
+    .caption-modal {
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:transparent;
+      z-index:11500;
+    }
+    .caption-card {
+      display:flex;
+      width:1200px;
+      height:800px;
+      padding-bottom:1px;
+      flex-direction:column;
+      justify-content:center;
+      align-items:flex-start;
+      border-radius:6px;
+      border:1px solid #000;
+      background:#FFF;
+      box-shadow:none;
+      position:relative;
+      overflow:hidden;
+      transition:background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+    }
+    .caption-card::after {
+      content:'';
+      position:absolute;
+      inset:0;
+      border-radius:6px;
+      box-shadow:-2px -2px 4px 0 rgba(0,0,0,0.25) inset;
+      pointer-events:none;
+      transition:box-shadow 0.4s ease;
+    }
+    .caption-header {
+      display:flex;
+      width:1200px;
+      height:36px;
+      padding:11.5px 1171px 11.5px 16px;
+      align-items:center;
+      background:rgba(217,217,217,0);
+      box-sizing:border-box;
+      flex-shrink:0;
+      border-bottom:1px solid #000;
+      transition:background 0.2s ease;
+    }
+    .caption-header.dark {
+      background:#000;
+    }
+    .caption-close {
+      background:none;
+      border:none;
+      padding:0;
+      cursor:pointer;
+      width:13px;
+      height:13px;
+    }
+    .caption-close img {
+      width:13px;
+      height:13px;
+      display:block;
+    }
+    .caption-frame {
+      width:1200px;
+      height:764px;
+      margin:0 auto;
+      position:relative;
+      box-sizing:border-box;
+      overflow-y:auto;
+      overflow-x:hidden;
+      scroll-snap-type:y mandatory;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      flex-shrink:0;
+      background:transparent;
+    }
+    .caption-page {
+      width:1200px;
+      height:764px;
+      position:relative;
+      scroll-snap-align:start;
+      flex-shrink:0;
+      background:transparent;
+    }
+    .caption-title {
+      color:var(--6F00FF, #6F00FF);
+      font-family:"Tiny5", cursive;
+      font-size:80px;
+      font-style:normal;
+      font-weight:400;
+      line-height:30px;
+      text-align:center;
+      word-break:break-word;
+      white-space:nowrap;
+      position:absolute;
+      top:88px;
+      left:50%;
+      transform:translateX(-50%);
+    }
+    .caption-main {
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+    }
+    .caption-illustration {
+      position:absolute;
+      top:192px;
+      left:111px;
+      width:591px;
+      height:510px;
+      background:url('Caption image/1.png') 0% 0% / contain no-repeat;
+      pointer-events:none;
+      background-color:transparent;
+    }
+    .caption-illustration-2 {
+      position:absolute;
+      top:224px;
+      left:792px;
+      width:143.007px;
+      height:182px;
+      background:url('Caption image/2.png') 0% 0% / contain no-repeat;
+      pointer-events:none;
+      background-color:transparent;
+    }
+    .caption-illustration-3 {
+      position:absolute;
+      top:224px;
+      left:954px;
+      width:165px;
+      height:196px;
+      background:url('Caption image/3.png') 0% 0% / contain no-repeat;
+      pointer-events:none;
+      background-color:transparent;
+    }
+    .caption-copy {
+      position:absolute;
+      top:481px;
+      left:808px;
+      right:30px;
+      color:var(--6F00FF, #6F00FF);
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:30px;
+      margin:0;
+    }
+    .page2-copy {
+      position:absolute;
+      top:64px;
+      left:144px;
+      right:696px;
+      color:var(--6F00FF, #6F00FF);
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:30px;
+      margin:0;
+    }
+    .page2-actions {
+      position:absolute;
+      top:64px;
+      left:809px;
+      right:240px;
+      color:var(--6F00FF, #6F00FF);
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:30px;
+      margin:0;
+    }
+    .page2-illustration {
+      position:absolute;
+      top:298px;
+      left:130px;
+      width:488px;
+      height:236px;
+      background:url('Caption image/4.png') 0.298px 0.24px / 99.905% 99.723% no-repeat;
+      pointer-events:none;
+      background-color:transparent;
+    }
+    .page2-img5 {
+      position:absolute;
+      top:100px;
+      left:799px;
+      width:217px;
+      height:65px;
+      background:url('Caption image/5.png') 50% / cover no-repeat;
+      pointer-events:none;
+    }
+    .page2-txt2 {
+      position:absolute;
+      top:189px;
+      left:815px;
+      right:214px;
+      color:var(--6F00FF, #6F00FF);
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:30px;
+      margin:0;
+    }
+    .page2-img6 {
+      position:absolute;
+      top:231px;
+      left:799px;
+      width:162px;
+      height:105px;
+      background:url('Caption image/6.png') 50% / cover no-repeat;
+      pointer-events:none;
+    }
+    .page2-txt3 {
+      position:absolute;
+      top:349px;
+      left:815px;
+      right:192px;
+      color:var(--6F00FF, #6F00FF);
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:30px;
+      margin:0;
+    }
+    .page2-img7 {
+      position:absolute;
+      top:392px;
+      left:809px;
+      width:136px;
+      height:113px;
+      background:url('Caption image/7.png') 50% / contain no-repeat;
+      pointer-events:none;
+    }
+    .page2-txt4 {
+      position:absolute;
+      top:519px;
+      left:815px;
+      right:171px;
+      color:var(--6F00FF, #6F00FF);
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:30px;
+      margin:0;
+    }
+    .page2-txt5 {
+      position:absolute;
+      top:619px;
+      left:809px;
+      right:1px;
+      color:var(--6F00FF, #6F00FF);
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:30px;
+      margin:0;
+    }
+    .page3-title-digital {
+      position:absolute;
+      top:152px;
+      left:332px;
+      right:701px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"Tiny5", cursive;
+      font-size:60px;
+      font-style:normal;
+      font-weight:400;
+      line-height:30px;
+      margin:0;
+    }
+    .page3-title-real {
+      position:absolute;
+      top:152px;
+      left:754px;
+      right:331px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"Tiny5", cursive;
+      font-size:60px;
+      font-style:normal;
+      font-weight:400;
+      line-height:30px;
+      margin:0;
+    }
+    .page3-img8 {
+      position:absolute;
+      top:249px;
+      left:224px;
+      right:224px;
+      width:750px;
+      height:307px;
+      background:url('Caption image/8.png') 0% 0% / contain no-repeat;
+      pointer-events:none;
+      background-color:transparent;
+    }
+    .page3-copy {
+      position:absolute;
+      top:587px;
+      left:239px;
+      right:239px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:30px;
+      margin:0;
+    }
+    .page4-title {
+      position:absolute;
+      top:94px;
+      left:343px;
+      right:346px;
+      color:var(--6F00FF, #6F00FF);
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:40px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      white-space:nowrap;
+      margin:0;
+    }
+    .page4-copy {
+      position:absolute;
+      top:142px;
+      left:213px;
+      right:213px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:24px;
+      margin:0;
+    }
+    .page4-img {
+      position:absolute;
+      top:212px;
+      left:424px;
+      width:379px;
+      height:365px;
+      background:url('Caption image/page 4-1.png') 0% 0% / contain no-repeat;
+      pointer-events:auto;
+      cursor:pointer;
+      background-color:transparent;
+    }
+    .page4-detail-bg {
+      width:1200px;
+      height:764px;
+      background:url('Caption image/page 4-detail.png') center center / cover no-repeat;
+      pointer-events:none;
+    }
+    .page6-carousel {
+      width:1198px;
+      height:763px;
+      margin:0 auto;
+      display:flex;
+      overflow-x:auto;
+      overflow-y:hidden;
+      scroll-snap-type:x mandatory;
+      box-sizing:border-box;
+      gap:0;
+    }
+    .page6-slide {
+      width:1198px;
+      height:763px;
+      flex-shrink:0;
+      position:relative;
+      scroll-snap-align:start;
+      background:rgba(0,0,0,0);
+    }
+    .page6-slide-dark {
+      background:#36007B;
+    }
+    .page6-slide-black {
+      background:#000;
+    }
+    .page6-title {
+      position:absolute;
+      top:38px;
+      left:492px;
+      right:491px;
+      color:var(--6F00FF, #6F00FF);
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:40px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      margin:0;
+    }
+    .page6-1-copy {
+      position:absolute;
+      top:131px;
+      left:30px;
+      right:788px;
+      width:380px;
+      height:538px;
+      color:#000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:60px;
+      font-style:normal;
+      font-weight:510;
+      line-height:71px;
+      margin:0;
+      z-index:5;
+    }
+    .page6-1-img {
+      position:absolute;
+      top:97px;
+      left:308px;
+      right:0;
+      width:890px;
+      height:570px;
+      background:url('Caption image/6-1.png') 50% / contain no-repeat;
+      pointer-events:none;
+      z-index:2;
+      background-color:transparent;
+      mix-blend-mode:multiply;
+      background-blend-mode:multiply;
+    }
+    .page6-2-copy {
+      position:absolute;
+      top:131px;
+      left:30px;
+      right:788px;
+      width:380px;
+      height:538px;
+      color:#000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:60px;
+      font-style:normal;
+      font-weight:510;
+      line-height:71px;
+      margin:0;
+      z-index:5;
+    }
+    .page6-2-img {
+      position:absolute;
+      top:97px;
+      left:308px;
+      right:0;
+      width:890px;
+      height:570px;
+      background:url('Caption image/6-2.png') 50% / contain no-repeat;
+      pointer-events:none;
+      z-index:2;
+      background-color:transparent;
+      mix-blend-mode:multiply;
+      background-blend-mode:multiply;
+    }
+    .page6-3-copy {
+      position:absolute;
+      top:131px;
+      left:30px;
+      right:788px;
+      width:380px;
+      height:538px;
+      color:#000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:60px;
+      font-style:normal;
+      font-weight:510;
+      line-height:71px;
+      margin:0;
+      z-index:5;
+    }
+    .page6-3-img {
+      position:absolute;
+      top:97px;
+      left:308px;
+      right:0;
+      width:890px;
+      height:570px;
+      background:url('Caption image/6-3.png') 50% / contain no-repeat;
+      pointer-events:none;
+      z-index:2;
+      background-color:transparent;
+      mix-blend-mode:multiply;
+      background-blend-mode:multiply;
+    }
+    .page6-slide-dark {
+      background:rgba(0,0,0,0);
+    }
+    .page6-slide-black {
+      background:#000;
+    }
+    .page6-title-dark {
+      color:#FFF;
+    }
+    .page6-slide-dark .page6-arrow {
+      background-image:url('Caption image/arrow white.png');
+    }
+    .page6-slide-dark .page6-arrow-prev {
+      background-image:url('Caption image/arrow white1.png');
+    }
+    .page6-slide-black .page6-arrow {
+      background-image:url('Caption image/arrow white.png');
+    }
+    .page6-slide-black .page6-arrow-prev {
+      background-image:url('Caption image/arrow white1.png');
+    }
+    .page6-slide-black .page6-arrow {
+      background-image:url('Caption image/arrow white.png');
+    }
+    .page6-slide-black .page6-arrow-prev {
+      background-image:url('Caption image/arrow white1.png');
+    }
+    .page6-4-copy {
+      position:absolute;
+      top:131px;
+      left:30px;
+      right:788px;
+      width:380px;
+      height:538px;
+      color:#FFF;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:60px;
+      font-style:normal;
+      font-weight:510;
+      line-height:71px;
+      margin:0;
+      z-index:6;
+    }
+    .page6-4-img {
+      position:absolute;
+      top:97px;
+      left:308px;
+      right:0;
+      width:890px;
+      height:570px;
+      background:url('Caption image/6-4.png') 50% / contain no-repeat;
+      pointer-events:none;
+      z-index:2;
+      background-color:transparent;
+    }
+    .page6-5-copy {
+      position:absolute;
+      top:131px;
+      left:30px;
+      right:788px;
+      width:380px;
+      height:538px;
+      color:#FFF;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:60px;
+      font-style:normal;
+      font-weight:510;
+      line-height:71px;
+      margin:0;
+      z-index:6;
+    }
+    .page6-5-img {
+      position:absolute;
+      top:97px;
+      left:308px;
+      right:0;
+      width:890px;
+      height:570px;
+      background:url('Caption image/6-5.png') 50% / contain no-repeat;
+      pointer-events:none;
+      z-index:2;
+      background-color:transparent;
+    }
+    .page7-title {
+      position:absolute;
+      top:34px;
+      left:30px;
+      right:935px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:40px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      margin:0;
+      white-space:nowrap;
+    }
+    .page7-subtitle {
+      position:absolute;
+      top:41px;
+      left:270px;
+      right:576px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:400;
+      line-height:24px;
+      margin:0;
+    }
+    .page7-asterisk {
+      position:absolute;
+      top:31px;
+      left:619px;
+      right:569px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      margin:0;
+    }
+    .page7-body {
+      position:absolute;
+      top:95px;
+      left:30px;
+      right:420px;
+      color:#000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:400;
+      line-height:24px;
+      margin:0;
+    }
+    .page7-img {
+      position:absolute;
+      top:214px;
+      left:176px;
+      right:162px;
+      width:860px;
+      height:432px;
+      background:url('Caption image/page 7.png') center center / contain no-repeat;
+      pointer-events:none;
+      background-color:transparent;
+    }
+    .page8-body {
+      position:absolute;
+      top:594px;
+      left:321px;
+      right:322px;
+      color:#FFF;
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:400;
+      line-height:24px;
+      margin:0;
+    }
+    .page8-lead {
+      position:absolute;
+      top:83px;
+      left:30px;
+      right:889px;
+      color:#FFF;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:24px;
+      margin:0;
+    }
+    .page8 {
+      background:#000;
+    }
+    .page8-point {
+      position:absolute;
+      width:68px;
+      height:68px;
+      aspect-ratio:1/1;
+      border-radius:4px;
+      background:lightgray 50% / contain no-repeat;
+      pointer-events:none;
+    }
+    .page8-point-label {
+      position:absolute;
+      top:84px;
+      left:50%;
+      transform:translateX(-50%);
+      width:200px;
+      color:#FFF;
+      text-align:center;
+      text-shadow:0 2px 25px #000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:26px;
+      margin:0;
+      pointer-events:none;
+    }
+    .page8-point {
+      position:absolute;
+      width:68px;
+      height:68px;
+      aspect-ratio:1/1;
+      border-radius:4px;
+      background:lightgray 50% / contain no-repeat;
+      pointer-events:none;
+    }
+    .page8-point-label {
+      position:absolute;
+      top:84px;
+      left:50%;
+      transform:translateX(-50%);
+      width:200px;
+      color:#FFF;
+      text-align:center;
+      text-shadow:0 2px 25px #000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:26px;
+      margin:0;
+      pointer-events:none;
+    }
+    .page8-1 {
+      top:202px;
+      left:218px;
+      background-image:url('Caption image/page 8-1.png');
+    }
+    .page8-2 {
+      top:413px;
+      left:112px;
+      background-image:url('Caption image/page 8-2.png');
+    }
+    .page8-3 {
+      top:130px;
+      left:863px;
+      background-image:url('Caption image/page 8-3.png');
+    }
+    .page8-4 {
+      top:272px;
+      left:1042px;
+      background-image:url('Caption image/page 8-4.png');
+    }
+    .page8-5 {
+      top:463px;
+      left:943px;
+      background-image:url('Caption image/page 8-5.png');
+    }
+    .page9-title {
+      position:absolute;
+      top:47px;
+      left:310px;
+      right:307px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:40px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      margin:0;
+      white-space:nowrap;
+    }
+    .page9-box {
+      position:absolute;
+      top:132px;
+      width:360px;
+      height:573px;
+      box-sizing:border-box;
+    }
+    .page9-box1 {
+      left:30px;
+      border:1px solid #000;
+    }
+    .page9-box2 {
+      left:419px;
+      border:1px solid #36007B;
+      background:#36007B;
+      color:#FFF;
+    }
+    .page9-box3 {
+      left:808px;
+      border:1px solid #000;
+      background:#000;
+    }
+    .page9-box1-title {
+      position:absolute;
+      top:20px;
+      left:65px;
+      right:66px;
+      width:229px;
+      height:24px;
+      color:#000;
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      margin:0;
+    }
+    .page9-box1-img {
+      position:absolute;
+      top:83.29px;
+      left:34px;
+      right:34px;
+      width:292px;
+      height:291.016px;
+      background:url('Caption image/page 9-1.png') 50% / cover no-repeat;
+      background-color:transparent;
+      border-radius:4px;
+    }
+    .page9-box1-divider {
+      position:absolute;
+      top:384px;
+      left:0;
+      right:0;
+      height:0;
+      border-bottom:1px solid #000;
+    }
+    .page9-box1-copy {
+      position:absolute;
+      top:398px;
+      left:13px;
+      right:13px;
+      width:334px;
+      height:148.518px;
+      color:#000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:400;
+      line-height:24px;
+      margin:0;
+      white-space:pre-line;
+    }
+    .page9-box2-title {
+      position:absolute;
+      top:20px;
+      left:46px;
+      right:46px;
+      width:268px;
+      height:24px;
+      color:#FFF;
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      margin:0;
+    }
+    .page9-box2-img {
+      position:absolute;
+      top:84px;
+      left:34px;
+      right:34px;
+      width:292px;
+      height:290px;
+      background:url('Caption image/page 9-2.png') 50% / cover no-repeat;
+      background-color:transparent;
+      border-radius:4px;
+    }
+    .page9-box2-divider {
+      position:absolute;
+      top:384px;
+      left:0;
+      right:0;
+      height:0;
+      border-bottom:1px solid #FFF;
+    }
+    .page9-box2-copy {
+      position:absolute;
+      top:398px;
+      left:13px;
+      right:13px;
+      width:334px;
+      height:148px;
+      color:#FFF;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:400;
+      line-height:24px;
+      margin:0;
+      white-space:pre-line;
+    }
+    .page9-box3-title {
+      position:absolute;
+      top:20px;
+      left:31px;
+      right:31px;
+      width:298px;
+      height:24px;
+      color:#FFF;
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      margin:0;
+    }
+    .page9-box3-img {
+      position:absolute;
+      top:84px;
+      left:34px;
+      right:34px;
+      width:292px;
+      height:290px;
+      background:url('Caption image/page 9-3.png') 50% / cover no-repeat;
+      background-color:transparent;
+      border-radius:4px;
+    }
+    .page9-box3-divider {
+      position:absolute;
+      top:384px;
+      left:0;
+      right:0;
+      height:0;
+      border-bottom:1px solid #FFF;
+    }
+    .page9-box3-copy {
+      position:absolute;
+      top:398px;
+      left:13px;
+      right:13px;
+      width:334px;
+      height:148px;
+      color:#FFF;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:400;
+      line-height:24px;
+      margin:0;
+      white-space:pre-line;
+    }
+    .page8-img {
+      position:absolute;
+      top:164px;
+      left:353px;
+      right:353px;
+      bottom:201px;
+      background:url('Caption image/page 8.png') lightgray 50% / contain no-repeat;
+      pointer-events:none;
+      background-color:transparent;
+    }
+    .page7-title {
+      position:absolute;
+      top:34px;
+      left:30px;
+      right:935px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:40px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      margin:0;
+      white-space:nowrap;
+    }
+    .page7-subtitle {
+      position:absolute;
+      top:41px;
+      left:270px;
+      right:576px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:400;
+      line-height:24px;
+      margin:0;
+    }
+    .page7-asterisk {
+      position:absolute;
+      top:31px;
+      left:619px;
+      right:569px;
+      color:var(--6F00FF, #6F00FF);
+      text-align:center;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:700;
+      line-height:24px;
+      margin:0;
+    }
+    .page7-body {
+      position:absolute;
+      top:95px;
+      left:30px;
+      right:420px;
+      color:#000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:400;
+      line-height:24px;
+      margin:0;
+    }
+    .page7-img {
+      position:absolute;
+      top:214px;
+      left:176px;
+      right:162px;
+      width:860px;
+      height:432px;
+      background:url('Caption image/page 7.png') 50% / contain no-repeat;
+      pointer-events:none;
+      background-color:transparent;
+    }
+    .page6-arrow {
+      position:absolute;
+      top:50.02px;
+      left:1147.19px;
+      width:20px;
+      height:18px;
+      background-color:transparent;
+      background-image:url('Caption image/arrow.png');
+      background-repeat:no-repeat;
+      background-position:50% 50%;
+      background-size:contain;
+      pointer-events:none;
+      border:none;
+      outline:none;
+      box-shadow:none;
+    }
+    .page6-arrow-next {
+      cursor:pointer;
+      pointer-events:auto;
+    }
+    .page6-arrow-prev {
+      position:absolute;
+      top:50.02px;
+      left:31px;
+      width:20px;
+      height:18px;
+      background-color:transparent;
+      background-image:url('Caption image/arrow1.png');
+      background-repeat:no-repeat;
+      background-position:50% 50%;
+      background-size:contain;
+      pointer-events:auto;
+      cursor:pointer;
+      border:none;
+      outline:none;
+      box-shadow:none;
+    }
+    .page4-detail-overlay {
+      position:absolute;
+      top:0;
+      left:0;
+      width:1198px;
+      height:764px;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,0.0);
+      z-index:5;
+    }
+    .preview-thumb {
+      width:261px;
+      height:261px;
+      object-fit:contain;
+      flex-shrink:0;
+    }
+    .preview-text {
+      display:flex;
+      width:210px;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:16px;
+      margin-top:-20px;
+    }
+    .preview-title {
+      align-self:stretch;
+      color:#000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:23px;
+      display:block;
+    }
+    .preview-sub {
+      color:#5D5D5D;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:14px;
+      font-style:normal;
+      font-weight:510;
+      line-height:18px;
+    }
+    .trash-modal {
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,0.35);
+      z-index:12050;
+    }
+    .trash-card {
+      width:1200px;
+      height:800px;
+      border-radius:6px;
+      border:1px solid #000;
+      background:#FFF;
+      box-shadow:-2px -2px 4px 0 rgba(0,0,0,0.25) inset;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .trash-header {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:8px 16px;
+      height:36px;
+      box-sizing:border-box;
+      border-bottom:1px solid #000;
+      background:rgba(217,217,217,0);
+    }
+    .trash-title {
+      margin:0;
+      font-size:16px;
+      font-weight:500;
+      color:#000;
+    }
+    .trash-close {
+      background:none;
+      border:none;
+      padding:0;
+      cursor:pointer;
+      width:20px;
+      height:20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .trash-close img {
+      width:13px;
+      height:13px;
+      display:block;
+    }
+    .trash-body {
+      flex:1;
+      display:flex;
+      overflow:hidden;
+      background:transparent;
+      gap:0;
+      align-items:flex-start;
+      height:764px;
+    }
+    .trash-pane-left {
+      width:810px;
+      height:764px;
+      flex-shrink:0;
+      overflow:auto;
+      background:transparent;
+      box-sizing:border-box;
+      padding:30px;
+    }
+    .trash-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(126px, 1fr));
+      gap:16px;
+      padding:0;
+      margin:0;
+      background:transparent;
+      list-style:none;
+    }
+    .trash-itemcard {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+      width:126px;
+    }
+    .trash-cardbox {
+      width:126px;
+      height:159px;
+      border-radius:5px;
+      border:1px solid #000;
+      background:#F2F2F2;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .trash-cardbox img {
+      width:93.5px;
+      height:93.5px;
+      border-radius:4px;
+      object-fit:contain;
+      display:block;
+      background:transparent;
+    }
+    .trash-name {
+      width:113px;
+      height:50px;
+      overflow:hidden;
+      color:#000;
+      text-align:center;
+      text-overflow:ellipsis;
+      white-space:normal;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:16px;
+      font-style:normal;
+      font-weight:510;
+      line-height:24px;
+      margin:0;
+    }
+    .trash-itemcard.active .trash-cardbox {
+      border:2px solid #6F00FF;
+    }
+    .trash-itemcard.active .trash-name {
+      color:#6F00FF;
+      font-weight:700;
+    }
+    .trash-detail {
+      width:389px;
+      height:763px;
+      flex-shrink:0;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:18px;
+      padding:0;
+      background:transparent;
+      position:relative;
+    }
+    .trash-divider-vert {
+      width:1px;
+      height:763px;
+      background:#000;
+      flex-shrink:0;
+    }
+    .trash-detail-thumb {
+      position:absolute;
+      top:45px;
+      left:75px;
+      width:240px;
+      height:240px;
+      background:transparent 50% / contain no-repeat;
+      border-radius:4px;
+    }
+    .trash-detail-title {
+      position:absolute;
+      top:318px;
+      left:45px;
+      right:74px;
+      width:270px;
+      margin:0;
+      color:#000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:30px;
+      font-style:normal;
+      font-weight:700;
+      line-height:36px;
+    }
+    .trash-detail-impact {
+      position:absolute;
+      top:503px;
+      left:45px;
+      right:74px;
+      width:270px;
+      margin:0;
+      color:#5D5D5D;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:14px;
+    }
+    .trash-detail-desc {
+      position:absolute;
+      top:405px;
+      left:45px;
+      right:74px;
+      width:270px;
+      margin:0;
+      color:#000;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:24px;
+    }
+    .trash-detail-ebw {
+      position:absolute;
+      top:544px;
+      left:45px;
+      right:74px;
+      width:270px;
+      margin:0;
+      color:#5D5D5D;
+      font-family:"SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size:20px;
+      font-style:normal;
+      font-weight:510;
+      line-height:36px;
+    }
+  </style>
+</head>
+<body>
+  <main class="desktop-wallpaper">
+    <button class="caption-btn" aria-label="Caption toggle">
+      <img src="caption.png" alt="Caption icon">
+    </button>
+    <div class="icon-grid">
+    </div>
+    <div class="center-stack" aria-hidden="true">
+      <div id="svg-holder"></div>
+    </div>
+    <div class="gauge-container" aria-hidden="true">
+      <div class="gauge-wrap">
+        <div class="gauge-segment"></div>
+        <div class="gauge-overlay">
+          <div class="gauge-segment"></div>
+        </div>
+      </div>
+      <div class="gauge-label">100 Hp</div>
+    </div>
+    <div class="preview-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="preview-card">
+        <div class="preview-header">
+          <button type="button" class="preview-close" aria-label="Close preview">
+            <img src="Close.png" alt="닫기">
+          </button>
+        </div>
+        <div class="preview-body">
+          <img class="preview-thumb" src="" alt="">
+          <div class="preview-text">
+            <div class="preview-title"></div>
+            <div class="preview-sub preview-filedata">File data</div>
+            <div class="preview-sub preview-about">about</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="trash-modal" aria-hidden="true" role="dialog">
+      <div class="trash-card">
+        <div class="trash-header">
+          <button type="button" class="trash-close" aria-label="Close trash history">
+            <img src="Close.png" alt="닫기">
+          </button>
+          <p class="trash-title">Trash History</p>
+        </div>
+        <div class="trash-body">
+          <div class="trash-pane-left">
+            <div class="trash-grid"></div>
+          </div>
+          <div class="trash-divider-vert"></div>
+          <div class="trash-detail">
+            <div class="trash-detail-thumb"></div>
+            <p class="trash-detail-title">Select an item</p>
+            <p class="trash-detail-desc"></p>
+            <p class="trash-detail-impact">Coral Impact: -</p>
+            <p class="trash-detail-ebw">(Climate<br>Water<br>Chem<br>Micro<br>Disturb)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption-modal" aria-hidden="true">
+      <div class="caption-card">
+        <div class="caption-header">
+          <button type="button" class="caption-close" aria-label="Close caption">
+            <img src="Close.png" alt="닫기">
+          </button>
+        </div>
+        <div class="caption-frame">
+          <div class="caption-page">
+            <div class="caption-title">Throw trash into the ocean</div>
+            <div class="caption-main">
+              <div class="caption-illustration" role="presentation"></div>
+              <div class="caption-illustration-2" role="presentation"></div>
+              <div class="caption-illustration-3" role="presentation"></div>
+              <p class="caption-copy">
+                Visible environmental pollution is relatively easy to recognize in everyday life, but forms of invisible pollution that occur deep within nature are difficult to perceive in reality.
+              </p>
+            </div>
+          </div>
+          <div class="caption-page">
+            <p class="caption-copy page2-copy">
+              Throw Trash into the Ocean addresses this issue through digital interactions that closely resemble real-world behavior.
+            </p>
+            <p class="page2-actions">Actions such as</p>
+            <div class="page2-img5" role="presentation"></div>
+            <p class="page2-txt2">generating waste,</p>
+            <div class="page2-img6" role="presentation"></div>
+            <p class="page2-txt3">viewing information,</p>
+            <div class="page2-img7" role="presentation"></div>
+            <p class="page2-txt4">and clicking to discard</p>
+            <p class="page2-txt5">it directly reflect the patterns of consumption and disposal that we repeatedly perform in everyday life.</p>
+            <div class="caption-illustration-3 page2-illustration"></div>
+          </div>
+          <div class="caption-page">
+            <p class="page3-title-digital">Digital</p>
+            <p class="page3-title-real">Real</p>
+            <div class="page3-img8" role="presentation"></div>
+            <p class="page3-copy">By translating these reality-based actions into a digital environment, the project enables users to recognize the seriousness of environmental pollution that remains invisible in the physical world.</p>
+          </div>
+          <div class="caption-page">
+            <p class="page4-title">Throw trash into the ocean!!</p>
+            <p class="page4-copy">Here, you can throw trash into the ocean as much as you want.</p>
+            <div class="page4-img" role="presentation"></div>
+          </div>
+          <div class="caption-page" id="page4-detail">
+            <div class="page4-detail-bg" role="presentation"></div>
+          </div>
+          <div class="caption-page">
+            <div class="page6-carousel">
+              <div class="page6-slide">
+                <p class="page6-title">Explanation</p>
+                <p class="page6-1-copy">Corals survive through the symbiotic algae living inside their tissues.</p>
+                <div class="page6-1-img" role="presentation"></div>
+                <button type="button" class="page6-arrow page6-arrow-next" data-target="1" aria-label="Next slide"></button>
+              </div>
+              <div class="page6-slide">
+                <p class="page6-title">Explanation</p>
+                <p class="page6-2-copy">These algae provide energy to the corals and give them their vibrant colors.</p>
+                <div class="page6-2-img" role="presentation"></div>
+                <button type="button" class="page6-arrow-prev" data-target="0" aria-label="Previous slide"></button>
+                <button type="button" class="page6-arrow page6-arrow-next" data-target="2" aria-label="Next slide"></button>
+              </div>
+              <div class="page6-slide">
+                <p class="page6-title">Explanation</p>
+                <p class="page6-3-copy">However, when the ocean becomes too warm, the algae leave the coral’s body.</p>
+                <div class="page6-3-img" role="presentation"></div>
+                <button type="button" class="page6-arrow-prev" data-target="1" aria-label="Previous slide"></button>
+                <button type="button" class="page6-arrow page6-arrow-next" data-target="3" aria-label="Next slide"></button>
+              </div>
+              <div class="page6-slide page6-slide-dark">
+                <p class="page6-title page6-title-dark">Explanation</p>
+                <p class="page6-4-copy">Once the algae are gone, the coral turns white and becomes extremely fragile.</p>
+                <div class="page6-4-img" role="presentation"></div>
+                <button type="button" class="page6-arrow-prev" data-target="2" aria-label="Previous slide"></button>
+                <button type="button" class="page6-arrow page6-arrow-next" data-target="4" aria-label="Next slide"></button>
+              </div>
+              <div class="page6-slide page6-slide-black">
+                <p class="page6-title page6-title-dark">Explanation</p>
+                <p class="page6-5-copy">This process is known as coral bleaching.</p>
+                <div class="page6-5-img" role="presentation"></div>
+                <button type="button" class="page6-arrow-prev" data-target="3" aria-label="Previous slide"></button>
+              </div>
+            </div>
+          </div>
+          <div class="caption-page">
+            <p class="page7-title">EBW System</p>
+            <p class="page7-subtitle">A Newly Defined Index for This Project</p>
+            <p class="page7-asterisk">*</p>
+            <p class="page7-body">EBW (Environmental Bleaching Weight)
+	represents the numerical impact that each trash-related action has on coral reefs.</p>
+            <div class="page7-img" role="presentation"></div>
+          </div>
+          <div class="caption-page page8">
+            <p class="page7-title">EBW System</p>
+            <p class="page7-subtitle">A Newly Defined Index for This Project</p>
+            <p class="page7-asterisk">*</p>
+            <p class="page8-lead">It is composed of five factors:</p>
+            <div class="page8-point page8-1">
+              <p class="page8-point-label">climate impact</p>
+            </div>
+            <div class="page8-point page8-2">
+              <p class="page8-point-label">chemical exposure</p>
+            </div>
+            <div class="page8-point page8-3">
+              <p class="page8-point-label">physical<br>disturbances</p>
+            </div>
+            <div class="page8-point page8-4">
+              <p class="page8-point-label">water quality<br>changes</p>
+            </div>
+            <div class="page8-point page8-5">
+              <p class="page8-point-label">micro-pollutants</p>
+            </div>
+            <div class="page8-img" role="presentation"></div>
+            <p class="page8-body">Each user action accumulates EBW, and the changes are visualized instantly in real time.</p>
+          </div>
+          <div class="caption-page page9">
+            <p class="page9-title">Three Stages of Coral Bleaching</p>
+            <div class="page9-box page9-box1">
+              <p class="page9-box1-title">Stage 1 – Healthy State</p>
+              <div class="page9-box1-img" role="presentation"></div>
+              <div class="page9-box1-divider" aria-hidden="true"></div>
+              <p class="page9-box1-copy">The coral still retains its color and structure.<br><br>Tiles rarely fall off, and there is little to no visible deformation.</p>
+            </div>
+            <div class="page9-box page9-box2">
+              <p class="page9-box2-title">Stage 2 – Weakening Stage</p>
+              <div class="page9-box2-img" role="presentation"></div>
+              <div class="page9-box2-divider" aria-hidden="true"></div>
+              <p class="page9-box2-copy">Accumulated stress begins to weaken the coral.<br><br>Tiles start to fall off in certain areas, and the surface becomes rough and unstable.</p>
+            </div>
+            <div class="page9-box page9-box3">
+              <p class="page9-box3-title">Stage 3 – Advanced Bleaching</p>
+              <div class="page9-box3-img" role="presentation"></div>
+              <div class="page9-box3-divider" aria-hidden="true"></div>
+              <p class="page9-box3-copy">The coral rapidly loses its color as its structure collapses.<br><br>A large number of tiles fall away, and the coral nearly loses its ability to function.</p>
+            </div>
+          </div>
+          <div class="caption-page"></div>
+          <div class="caption-page"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const iconLayer = document.querySelector('.icon-grid');
+
+      window.addEventListener('pointerdown', () => {
+        document.body.classList.add('cursor-click');
+      }, { capture: true });
+      window.addEventListener('pointerup', () => {
+        document.body.classList.remove('cursor-click');
+      }, { capture: true });
+      window.addEventListener('pointercancel', () => {
+        document.body.classList.remove('cursor-click');
+      }, { capture: true });
+
+      const TRASH_VARIANTS = [
+        'Trash can.png',
+        'Trash can 2.png',
+        'Trash can 3.png',
+        'Trash can 4.png',
+      ];
+      const TRASH_ICON_NAME = 'Trash can.png';
+      const MAX_HP_BASE = 7460;
+      let trashIconEl = null;
+      let trashButton = null;
+      let trashImg = null;
+      let trashStage = 0;
+
+      const AVAILABLE_ICONS = [
+        'Airplane.png',
+        'Anchor.png',
+        'Balloon fragments.png',
+        'Battery.png',
+        'Beer bottle cap.png',
+        'Broken glass bottle.png',
+        'Bubble wrap.png',
+        'Chemical sunscreen (non-reef-safe).png',
+        'Cigarette butt (filter).png',
+        'Concrete block.png',
+        'Contact lenses.png',
+        'Cotton swab.png',
+        'Cruise ship.png',
+        'Dental floss.png',
+        'Disposable cup and straw.png',
+        'Disposable mask.png',
+        'Empty lotion:shampoo bottle.png',
+        'Fireworks.png',
+        'Fishing hook.png',
+        'Fishing line.png',
+        'Fishing net and ghost gear.png',
+        'Gel ice pack.png',
+        'Glitter cosmetics.png',
+        'Hair dye.png',
+        'Illegal fishing.png',
+        'Illegally dumped trash bag.png',
+        'Lead sinker.png',
+        'Meat steak.png',
+        'Medicine (pharmaceuticals).png',
+        'Mobile phone cable.png',
+        'Oil drum.png',
+        'PET water bottle.png',
+        'Paint can.png',
+        'Paper receipts.png',
+        'Party ribbons.png',
+        'Pesticides and herbicides.png',
+        'Plastic glove.png',
+      'Plastic lining of a paper cup.png',
+      'Plastic spoon and fork.png',
+      'Plastic takeout container.png',
+      'Plastic toys.png',
+      'Roadside herbicide:weed spraying.png',
+      'Ship oil spill.png',
+      'Snack wrapper.png',
+      'Spray can.png',
+      'Styrofoam float.png',
+      'Tin can (canned food can).png',
+      'Toothpaste microbeads.png',
+      'Washing jeans.png',
+      'Wet wipes.png',
+    ];
+      const ICON_EBW = {
+        'Disposable cup and straw.png': { climate:0, water:5, chem:20, micro:50, disturb:5 },
+        'Plastic takeout container.png': { climate:0, water:20, chem:15, micro:60, disturb:5 },
+        'Bubble wrap.png': { climate:0, water:5, chem:10, micro:50, disturb:20 },
+        'PET water bottle.png': { climate:0, water:5, chem:10, micro:50, disturb:0 },
+        'Washing jeans.png': { climate:0, water:20, chem:10, micro:70, disturb:0 },
+        'Hair dye.png': { climate:0, water:30, chem:60, micro:10, disturb:0 },
+        'Chemical sunscreen (non-reef-safe).png': { climate:0, water:10, chem:80, micro:5, disturb:0 },
+        'Glitter cosmetics.png': { climate:0, water:10, chem:40, micro:40, disturb:0 },
+        'Meat steak.png': { climate:60, water:40, chem:5, micro:0, disturb:0 },
+        'Pesticides and herbicides.png': { climate:0, water:40, chem:70, micro:0, disturb:0 },
+        'Airplane.png': { climate:100, water:5, chem:0, micro:0, disturb:0 },
+        'Cruise ship.png': { climate:50, water:20, chem:10, micro:10, disturb:60 },
+        'Concrete block.png': { climate:20, water:60, chem:0, micro:0, disturb:40 },
+        'Anchor.png': { climate:0, water:40, chem:0, micro:0, disturb:80 },
+        'Fishing net and ghost gear.png': { climate:0, water:20, chem:0, micro:40, disturb:80 },
+        'Illegally dumped trash bag.png': { climate:0, water:60, chem:30, micro:40, disturb:20 },
+        'Medicine (pharmaceuticals).png': { climate:0, water:30, chem:70, micro:10, disturb:0 },
+        'Cigarette butt (filter).png': { climate:0, water:10, chem:40, micro:60, disturb:0 },
+        'Fishing hook.png': { climate:0, water:10, chem:20, micro:0, disturb:60 },
+        'Lead sinker.png': { climate:0, water:30, chem:90, micro:0, disturb:40 },
+        'Oil drum.png': { climate:0, water:50, chem:70, micro:0, disturb:20 },
+        'Ship oil spill.png': { climate:0, water:80, chem:70, micro:0, disturb:40 },
+        'Beer bottle cap.png': { climate:0, water:10, chem:10, micro:0, disturb:20 },
+        'Tin can (canned food can).png': { climate:0, water:20, chem:40, micro:0, disturb:10 },
+        'Broken glass bottle.png': { climate:0, water:5, chem:0, micro:0, disturb:40 },
+        'Styrofoam float.png': { climate:0, water:10, chem:10, micro:60, disturb:20 },
+        'Plastic spoon and fork.png': { climate:0, water:5, chem:10, micro:60, disturb:10 },
+        'Gel ice pack.png': { climate:0, water:10, chem:30, micro:5, disturb:0 },
+        'Balloon fragments.png': { climate:0, water:5, chem:10, micro:60, disturb:20 },
+        'Party ribbons.png': { climate:0, water:5, chem:10, micro:60, disturb:40 },
+        'Mobile phone cable.png': { climate:0, water:5, chem:30, micro:10, disturb:10 },
+        'Fishing line.png': { climate:0, water:20, chem:0, micro:60, disturb:80 },
+        'Dental floss.png': { climate:0, water:5, chem:0, micro:70, disturb:10 },
+        'Contact lenses.png': { climate:0, water:5, chem:10, micro:80, disturb:0 },
+        'Wet wipes.png': { climate:0, water:20, chem:20, micro:50, disturb:0 },
+        'Empty lotion:shampoo bottle.png': { climate:0, water:5, chem:20, micro:20, disturb:0 },
+        'Cotton swab.png': { climate:0, water:10, chem:20, micro:40, disturb:0 },
+        'Plastic glove.png': { climate:0, water:10, chem:10, micro:60, disturb:10 },
+        'Disposable mask.png': { climate:0, water:10, chem:10, micro:70, disturb:20 },
+        'Plastic lining of a paper cup.png': { climate:0, water:5, chem:10, micro:40, disturb:0 },
+        'Toothpaste microbeads.png': { climate:0, water:10, chem:40, micro:80, disturb:0 },
+        'Snack wrapper.png': { climate:0, water:5, chem:20, micro:40, disturb:5 },
+        'Spray can.png': { climate:0, water:10, chem:60, micro:0, disturb:0 },
+        'Paint can.png': { climate:0, water:30, chem:80, micro:0, disturb:0 },
+        'Battery.png': { climate:0, water:50, chem:100, micro:0, disturb:0 },
+        'Fireworks.png': { climate:5, water:40, chem:40, micro:10, disturb:30 },
+        'Illegal fishing.png': { climate:0, water:80, chem:100, micro:0, disturb:50 },
+        'Paper receipts.png': { climate:0, water:5, chem:20, micro:0, disturb:0 },
+        'Plastic toys.png': { climate:0, water:10, chem:10, micro:40, disturb:10 },
+        'Excessive use of de-icing salt.png': { climate:0, water:60, chem:60, micro:0, disturb:0 },
+      };
+      const ICON_DAMAGE = {
+        'Disposable cup and straw.png': { base:193, stage2:386, stage3:772 },
+        'Plastic takeout container.png': { base:226, stage2:452, stage3:904 },
+        'Bubble wrap.png': { base:186, stage2:372, stage3:744 },
+        'PET water bottle.png': { base:179, stage2:358, stage3:716 },
+        'Washing jeans.png': { base:226, stage2:452, stage3:904 },
+        'Hair dye.png': { base:259, stage2:518, stage3:1036 },
+        'Chemical sunscreen (non-reef-safe).png': { base:234, stage2:468, stage3:936 },
+        'Glitter cosmetics.png': { base:215, stage2:430, stage3:860 },
+        'Meat steak.png': { base:340, stage2:680, stage3:1360 },
+        'Pesticides and herbicides.png': { base:285, stage2:570, stage3:1140 },
+        'Airplane.png': { base:340, stage2:680, stage3:1360 },
+        'Cruise ship.png': { base:340, stage2:680, stage3:1360 },
+        'Concrete block.png': { base:325, stage2:650, stage3:1300 },
+        'Anchor.png': { base:237, stage2:474, stage3:948 },
+        'Fishing net and ghost gear.png': { base:223, stage2:446, stage3:892 },
+        'Illegally dumped trash bag.png': { base:322, stage2:644, stage3:1288 },
+        'Medicine (pharmaceuticals).png': { base:270, stage2:540, stage3:1080 },
+        'Cigarette butt (filter).png': { base:230, stage2:460, stage3:920 },
+        'Fishing hook.png': { base:186, stage2:372, stage3:744 },
+        'Lead sinker.png': { base:300, stage2:600, stage3:1200 },
+        'Oil drum.png': { base:314, stage2:628, stage3:1256 },
+        'Ship oil spill.png': { base:340, stage2:680, stage3:1360 },
+        'Beer bottle cap.png': { base:149, stage2:298, stage3:596 },
+        'Tin can (canned food can).png': { base:212, stage2:424, stage3:848 },
+        'Broken glass bottle.png': { base:138, stage2:276, stage3:552 },
+        'Styrofoam float.png': { base:208, stage2:416, stage3:832 },
+        'Plastic spoon and fork.png': { base:193, stage2:386, stage3:772 },
+        'Gel ice pack.png': { base:179, stage2:358, stage3:716 },
+        'Balloon fragments.png': { base:193, stage2:386, stage3:772 },
+        'Party ribbons.png': { base:208, stage2:416, stage3:832 },
+        'Mobile phone cable.png': { base:190, stage2:380, stage3:760 },
+        'Fishing line.png': { base:252, stage2:504, stage3:1008 },
+        'Dental floss.png': { base:197, stage2:394, stage3:788 },
+        'Contact lenses.png': { base:204, stage2:408, stage3:816 },
+        'Wet wipes.png': { base:237, stage2:474, stage3:948 },
+        'Empty lotion:shampoo bottle.png': { base:175, stage2:350, stage3:700 },
+        'Cotton swab.png': { base:193, stage2:386, stage3:772 },
+        'Plastic glove.png': { base:201, stage2:402, stage3:804 },
+        'Disposable mask.png': { base:215, stage2:430, stage3:860 },
+        'Plastic lining of a paper cup.png': { base:171, stage2:342, stage3:684 },
+        'Toothpaste microbeads.png': { base:245, stage2:490, stage3:980 },
+        'Snack wrapper.png': { base:184, stage2:368, stage3:736 },
+        'Spray can.png': { base:215, stage2:430, stage3:860 },
+        'Paint can.png': { base:263, stage2:526, stage3:1052 },
+        'Battery.png': { base:322, stage2:644, stage3:1288 },
+        'Fireworks.png': { base:285, stage2:570, stage3:1140 },
+        'Illegal fishing.png': { base:340, stage2:680, stage3:1360 },
+        'Paper receipts.png': { base:153, stage2:306, stage3:612 },
+        'Plastic toys.png': { base:186, stage2:372, stage3:744 },
+      };
+      const ICON_META = {
+        'Disposable cup and straw.png': { impact: 33, desc: 'Use and discard disposable plastic cup and straw at a cafe.' },
+        'Plastic takeout container.png': { impact: 48, desc: 'Order delivery food and throw away the plastic takeout container.' },
+        'Bubble wrap.png': { impact: 30, desc: 'Dispose of bubble wrap and plastic shipping film after deliveries.' },
+        'PET water bottle.png': { impact: 27, desc: 'Frequently buy bottled water and discard the PET bottles.' },
+        'Washing jeans.png': { impact: 48, desc: 'Frequently wash jeans, releasing microfibres into wastewater.' },
+        'Hair dye.png': { impact: 63, desc: 'Pour leftover hair dye down the sink or drain.' },
+        'Chemical sunscreen (non-reef-safe).png': { impact: 52, desc: 'Use non-reef-safe sunscreen while swimming in the sea.' },
+        'Glitter cosmetics.png': { impact: 43, desc: 'Use glitter cosmetics and wash them off into the drain.' },
+        'Meat steak.png': { impact: 100, desc: 'Frequently eat beef-based meals, increasing livestock demand.' },
+        'Pesticides and herbicides.png': { impact: 75, desc: 'Apply pesticides or herbicides and let them wash away.' },
+        'Airplane.png': { impact: 100, desc: 'Frequently take long-distance flights.' },
+        'Cruise ship.png': { impact: 100, desc: 'Use large container ships or cruise travel.' },
+        'Concrete block.png': { impact: 93, desc: 'Use large amounts of concrete for coastal reclamation or breakwaters.' },
+        'Anchor.png': { impact: 53, desc: 'Drop an anchor near or on coral reefs, scraping the seabed.' },
+        'Fishing net and ghost gear.png': { impact: 47, desc: 'Leave used fishing nets or lines in the sea as ghost gear.' },
+        'Illegally dumped trash bag.png': { impact: 92, desc: 'Illegally dump garbage bags into rivers or streams.' },
+        'Medicine (pharmaceuticals).png': { impact: 68, desc: 'Dispose of unused medicines down the toilet or drain.' },
+        'Cigarette butt (filter).png': { impact: 50, desc: 'Throw cigarette butts on the ground or beach.' },
+        'Fishing hook.png': { impact: 30, desc: 'Leave used fishing hooks behind, injuring marine animals.' },
+        'Lead sinker.png': { impact: 82, desc: 'Lose or discard lead sinkers, leaching lead into the sea.' },
+        'Oil drum.png': { impact: 88, desc: 'Improperly dispose of oil or chemical drums with residues.' },
+        'Ship oil spill.png': { impact: 100, desc: 'Poorly manage ships, allowing oil spills into the sea.' },
+        'Beer bottle cap.png': { impact: 13, desc: 'Leave beer bottle caps on beaches or outdoors.' },
+        'Tin can (canned food can).png': { impact: 42, desc: 'Litter tin cans instead of recycling them.' },
+        'Broken glass bottle.png': { impact: 8, desc: 'Leave broken glass bottles along coasts or rivers.' },
+        'Styrofoam float.png': { impact: 40, desc: 'Leave old styrofoam floats to break apart in the water.' },
+        'Plastic spoon and fork.png': { impact: 33, desc: 'Use disposable plastic cutlery and throw it away.' },
+        'Gel ice pack.png': { impact: 27, desc: 'Empty gel ice packs into the drain.' },
+        'Balloon fragments.png': { impact: 33, desc: 'Release balloons that eventually fall into the ocean.' },
+        'Party ribbons.png': { impact: 40, desc: 'Leave party ribbons to blow away into nature.' },
+        'Mobile phone cable.png': { impact: 32, desc: 'Throw away broken mobile phone cables as regular trash.' },
+        'Fishing line.png': { impact: 60, desc: 'Leave broken fishing line in the water.' },
+        'Dental floss.png': { impact: 35, desc: 'Throw used dental floss into the toilet or sink.' },
+        'Contact lenses.png': { impact: 38, desc: 'Rinse used contact lenses down the drain.' },
+        'Wet wipes.png': { impact: 53, desc: 'Flush wet wipes down the toilet or drain.' },
+        'Empty lotion:shampoo bottle.png': { impact: 25, desc: 'Throw away empty lotion or shampoo bottles without rinsing.' },
+        'Cotton swab.png': { impact: 33, desc: 'Dispose of plastic cotton swabs after use.' },
+        'Plastic glove.png': { impact: 37, desc: 'Use disposable plastic gloves once and discard them.' },
+        'Disposable mask.png': { impact: 43, desc: 'Litter used disposable masks outdoors.' },
+        'Plastic lining of a paper cup.png': { impact: 23, desc: 'Throw away coated paper cups without considering the plastic lining.' },
+        'Toothpaste microbeads.png': { impact: 57, desc: 'Use toothpaste with microbeads and rinse it into the drain.' },
+        'Snack wrapper.png': { impact: 29, desc: 'Discard snack wrappers as litter or regular trash.' },
+        'Spray can.png': { impact: 43, desc: 'Throw away used spray cans without proper disposal.' },
+        'Paint can.png': { impact: 65, desc: 'Discard paint cans without cleaning out leftover paint.' },
+        'Battery.png': { impact: 92, desc: 'Throw used batteries in regular trash instead of separate collection.' },
+        'Fireworks.png': { impact: 75, desc: 'Set off large fireworks near coasts and leave the debris.' },
+        'Illegal fishing.png': { impact: 100, desc: 'Use explosives or cyanide for illegal fishing.' },
+        'Paper receipts.png': { impact: 15, desc: 'Print unnecessary paper receipts repeatedly.' },
+        'Plastic toys.png': { impact: 30, desc: 'Frequently buy and discard short-lived plastic toys.' },
+      };
+      const INITIAL_ICONS = ['Illegally dumped trash bag.png', 'Trash can.png'];
+      const icons = INITIAL_ICONS;
+
+      const createIcon = (fileName) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'desktop-icon';
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'icon-toggle';
+        const encoded = encodeURIComponent(fileName);
+        const src = `Icon/${encoded}`;
+        btn.dataset.default = src;
+        btn.dataset.active = src;
+        btn.dataset.file = fileName;
+        const baseLabel = fileName.replace(/\\.png$/i, '');
+        const isTrashVariant = TRASH_VARIANTS.includes(fileName);
+        btn.setAttribute('aria-label', isTrashVariant ? 'Trash Can' : baseLabel);
+        if (isTrashVariant) {
+          btn.dataset.folder = 'trash';
+        }
+
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = `${isTrashVariant ? 'Trash Can' : baseLabel} 아이콘`;
+        img.loading = 'lazy';
+
+        const label = document.createElement('label');
+        label.textContent = isTrashVariant ? 'Trash Can' : baseLabel;
+
+        btn.appendChild(img);
+        wrapper.appendChild(btn);
+        wrapper.appendChild(label);
+        if (!trashIconEl && isTrashVariant) {
+          trashIconEl = wrapper;
+          trashButton = btn;
+          trashImg = img;
+        }
+        return wrapper;
+      };
+
+      const fragment = document.createDocumentFragment();
+      icons.forEach(name => fragment.appendChild(createIcon(name)));
+      iconLayer.appendChild(fragment);
+
+      // 초기 그리드 배치 (이후 드래그로 자유배치)
+      const padX = 24;
+      const padY = 120; // 기본 두 아이콘이 브라우저 상단 UI에 가리지 않게 여유를 둠
+      const cellW = 112 + 24; // 아이콘 폭 + 여백
+      const cellH = 120 + 32; // 버튼+라벨 높이 추정 + 여백
+      const maxWidth = iconLayer.clientWidth || window.innerWidth;
+      const cols = Math.max(1, Math.floor((maxWidth - padX * 2) / cellW));
+
+      document.querySelectorAll('.desktop-icon').forEach((icon, idx) => {
+        const col = idx % cols;
+        const row = Math.floor(idx / cols);
+        icon.style.left = `${padX + col * cellW}px`;
+        icon.style.top = `${padY + row * cellH}px`;
+      });
+
+      let zIndexSeed = 100;
+      let selectedBtn = null;
+      const recordTrash = (btn) => {
+        const file = btn?.dataset?.file || '';
+        const label = btn?.closest('.desktop-icon')?.querySelector('label')?.textContent || file;
+        const now = new Date();
+        trashHistory.push({
+          file,
+          title: label,
+          time: now.toLocaleString('de-DE'),
+        });
+      };
+
+      const setTrashDetail = (fileName, title = '', item = null) => {
+        if (!trashDetailThumb || !trashDetailTitle || !trashDetailImpact || !trashDetailDesc) return;
+        const encoded = fileName ? encodeURIComponent(fileName) : '';
+        const src = fileName ? `Icon/${encoded}` : '';
+        trashDetailThumb.style.backgroundImage = src ? `url('${src}')` : 'none';
+        const meta = fileName ? ICON_META[fileName] : null;
+        const ebw = fileName ? ICON_EBW[fileName] : null;
+        trashDetailTitle.textContent = title || fileName || 'Select an item';
+        trashDetailImpact.textContent = meta && meta.impact ? `Coral Impact: ${meta.impact}` : 'Coral Impact: -';
+        trashDetailDesc.textContent = meta && meta.desc ? meta.desc : '';
+        if (trashDetailEbw) {
+          if (ebw) {
+            trashDetailEbw.innerHTML = `Climate: ${ebw.climate}<br>Water: ${ebw.water}<br>Chem: ${ebw.chem}<br>Micro: ${ebw.micro}<br>Disturb: ${ebw.disturb}`;
+          } else {
+            trashDetailEbw.innerHTML = '(Climate<br>Water<br>Chem<br>Micro<br>Disturb)';
+          }
+        }
+      };
+      const renderTrashHistory = () => {
+        if (!trashGrid) return;
+        trashGrid.innerHTML = '';
+        let firstItem = null;
+        trashHistory.slice().reverse().forEach((item) => {
+          if (!firstItem) firstItem = item;
+          const wrap = document.createElement('div');
+          wrap.className = 'trash-itemcard';
+
+          const box = document.createElement('div');
+          box.className = 'trash-cardbox';
+          const img = document.createElement('img');
+          const file = item.file || '';
+          const src = file ? `Icon/${encodeURIComponent(file)}` : 'trasch.png';
+          img.src = src;
+          img.alt = item.title || file || 'trash icon';
+          box.appendChild(img);
+
+          const name = document.createElement('p');
+          name.className = 'trash-name';
+          name.textContent = item.title || file || 'Unknown';
+
+          wrap.addEventListener('click', () => {
+            trashGrid.querySelectorAll('.trash-itemcard').forEach(el => el.classList.remove('active'));
+            wrap.classList.add('active');
+            setTrashDetail(file, name.textContent);
+          });
+
+          wrap.appendChild(box);
+          wrap.appendChild(name);
+          trashGrid.appendChild(wrap);
+        });
+        if (firstItem) {
+          const file = firstItem.file || '';
+          const title = firstItem.title || file || 'Unknown';
+          setTrashDetail(file, title, firstItem);
+          const firstBox = trashGrid.querySelector('.trash-itemcard');
+          if (firstBox) firstBox.classList.add('active');
+        }
+      };
+      const openTrashModal = () => {
+        if (!trashModal) return;
+        renderTrashHistory();
+        trashModal.style.display = 'flex';
+        trashModal.setAttribute('aria-hidden', 'false');
+      };
+      const closeTrashModal = () => {
+        if (!trashModal) return;
+        trashModal.style.display = 'none';
+        trashModal.setAttribute('aria-hidden', 'true');
+      };
+
+      const deselect = () => {
+        if (!selectedBtn) return;
+        const img = selectedBtn.querySelector('img');
+        img.src = selectedBtn.dataset.default;
+        selectedBtn.removeAttribute('aria-pressed');
+        selectedBtn = null;
+      };
+
+      // 빈 공간 클릭 시 선택 해제
+      iconLayer.addEventListener('pointerdown', (event) => {
+        if (!event.target.closest('.icon-toggle')) {
+          deselect();
+        }
+      });
+
+      const placeIconAt = (icon, clientX, clientY) => {
+        const layerRect = iconLayer.getBoundingClientRect();
+        const w = icon.offsetWidth || 112;
+        const h = icon.offsetHeight || 120;
+        const maxX = Math.max(0, iconLayer.clientWidth - w);
+        const maxY = Math.max(0, iconLayer.clientHeight - h);
+        const nextLeft = clientX - layerRect.left - w / 2;
+        const nextTop = clientY - layerRect.top - h / 2;
+        icon.style.left = `${Math.max(0, Math.min(nextLeft, maxX))}px`;
+        icon.style.top = `${Math.max(0, Math.min(nextTop, maxY))}px`;
+      };
+
+      const attachIconBehavior = (btn) => {
+        const icon = btn.closest('.desktop-icon');
+        const img = btn.querySelector('img');
+        const defaultSrc = btn.dataset.default;
+        const activeSrc = btn.dataset.active;
+        let dragging = false;
+        let offsetX = 0;
+        let offsetY = 0;
+        let dragRect = null;
+        let maxX = 0;
+        let maxY = 0;
+        let moveFrame = null;
+        let pendingPos = null;
+
+        const applyMove = () => {
+          if (!dragging || !pendingPos || !dragRect) {
+            moveFrame = null;
+            return;
+          }
+          const { x, y } = pendingPos;
+          const nextLeft = x - dragRect.left - offsetX;
+          const nextTop = y - dragRect.top - offsetY;
+          icon.style.left = `${Math.max(0, Math.min(nextLeft, maxX))}px`;
+          icon.style.top = `${Math.max(0, Math.min(nextTop, maxY))}px`;
+          moveFrame = null;
+        };
+
+        const onPointerMove = (event) => {
+          if (!dragging) return;
+          pendingPos = { x: event.clientX, y: event.clientY };
+          if (!moveFrame) {
+            moveFrame = requestAnimationFrame(applyMove);
+          }
+        };
+
+        const endPress = (event) => {
+          dragging = false;
+          pendingPos = null;
+          if (moveFrame) {
+            cancelAnimationFrame(moveFrame);
+            moveFrame = null;
+          }
+          if (btn.hasPointerCapture(event.pointerId)) {
+            btn.releasePointerCapture(event.pointerId);
+          }
+          btn.removeEventListener('pointermove', onPointerMove);
+          btn.removeEventListener('pointerup', endPress);
+          btn.removeEventListener('pointercancel', endPress);
+
+          // Trash 아이콘과 겹치면 삭제
+          if (trashIconEl && icon !== trashIconEl) {
+            const trashRect = trashIconEl.getBoundingClientRect();
+            const iconRect = icon.getBoundingClientRect();
+            const overlap = !(
+              iconRect.right < trashRect.left ||
+              iconRect.left > trashRect.right ||
+              iconRect.bottom < trashRect.top ||
+              iconRect.top > trashRect.bottom
+            );
+          if (overlap) {
+            icon.remove();
+            if (selectedBtn === btn) {
+              deselect();
+            }
+            if (!firstTrashDropped) {
+              firstTrashDropped = true;
+              setTrashStage(1);
+            }
+            bleachByIcon(btn.dataset?.file);
+            recordTrash(btn);
+          }
+        }
+        };
+
+        btn.addEventListener('pointerdown', (event) => {
+          event.preventDefault();
+          // 선택 전환
+          if (selectedBtn && selectedBtn !== btn) {
+            deselect();
+          }
+          selectedBtn = btn;
+          img.src = activeSrc;
+          btn.setAttribute('aria-pressed', 'true');
+
+          dragging = true;
+          icon.style.zIndex = ++zIndexSeed;
+          const iconRect = icon.getBoundingClientRect();
+          dragRect = iconLayer.getBoundingClientRect();
+          maxX = Math.max(0, iconLayer.clientWidth - icon.offsetWidth);
+          maxY = Math.max(0, iconLayer.clientHeight - icon.offsetHeight);
+          offsetX = event.clientX - iconRect.left;
+          offsetY = event.clientY - iconRect.top;
+          btn.setPointerCapture(event.pointerId);
+          onPointerMove(event);
+          btn.addEventListener('pointermove', onPointerMove);
+          btn.addEventListener('pointerup', endPress);
+          btn.addEventListener('pointercancel', endPress);
+        });
+      };
+
+      document.querySelectorAll('.icon-toggle').forEach((btn) => {
+        attachIconBehavior(btn);
+      });
+
+      const addIcon = (clientX = window.innerWidth / 2, clientY = window.innerHeight / 2) => {
+        const fileName = AVAILABLE_ICONS[Math.floor(Math.random() * AVAILABLE_ICONS.length)];
+        const iconEl = createIcon(fileName);
+        iconLayer.appendChild(iconEl);
+        const x = Number.isFinite(clientX) ? clientX : window.innerWidth / 2;
+        const y = Number.isFinite(clientY) ? clientY : window.innerHeight / 2;
+        placeIconAt(iconEl, x, y);
+        const btn = iconEl.querySelector('.icon-toggle');
+        attachIconBehavior(btn);
+        return iconEl;
+      };
+
+      let lastContextPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+      let lastPointerPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+      let svgGroups = [];
+      const bleachedGroups = new Set();
+      const gaugeOverlay = document.querySelector('.gauge-overlay');
+      const gaugeLabel = document.querySelector('.gauge-label');
+      let firstTrashDropped = false;
+      const preview = document.querySelector('.preview-backdrop');
+      const previewThumb = document.querySelector('.preview-thumb');
+      const previewTitle = document.querySelector('.preview-title');
+      const previewFiledata = document.querySelector('.preview-filedata');
+      const previewAbout = document.querySelector('.preview-about');
+      const previewClose = document.querySelector('.preview-close');
+      const captionBtn = document.querySelector('.caption-btn');
+      const captionModal = document.querySelector('.caption-modal');
+      const captionClose = document.querySelector('.caption-close');
+      const trashModal = document.querySelector('.trash-modal');
+      const trashClose = document.querySelector('.trash-close');
+      const trashGrid = document.querySelector('.trash-grid');
+      const trashDetailThumb = document.querySelector('.trash-detail-thumb');
+      const trashDetailTitle = document.querySelector('.trash-detail-title');
+      const trashDetailImpact = document.querySelector('.trash-detail-impact');
+      const trashDetailDesc = document.querySelector('.trash-detail-desc');
+      const trashDetailEbw = document.querySelector('.trash-detail-ebw');
+      const trashHistory = [];
+      const page4Img = document.querySelector('.page4-img');
+      const page4Detail = document.getElementById('page4-detail');
+      const captionFrame = document.querySelector('.caption-frame');
+      const page6Carousel = document.querySelector('.page6-carousel');
+      const captionHeader = document.querySelector('.caption-header');
+      const captionCloseImg = document.querySelector('.caption-close img');
+      const captionCard = document.querySelector('.caption-card');
+      const setTrashStage = (stage) => {
+        if (!trashButton || !trashImg) return;
+        const nextStage = Math.max(trashStage, Math.min(stage, TRASH_VARIANTS.length - 1));
+        if (nextStage === trashStage) return;
+        const fileName = TRASH_VARIANTS[nextStage];
+        const encoded = encodeURIComponent(fileName);
+        const src = `Icon/${encoded}`;
+        trashButton.dataset.default = src;
+        trashButton.dataset.active = src;
+        trashImg.src = src;
+        trashStage = nextStage;
+      };
+
+      const updateTrashStageByGauge = (ratio) => {
+        if (!firstTrashDropped) return;
+        if (ratio <= 0.4) {
+          setTrashStage(3); // 40% 이하 → Trash can 4.png
+        } else if (ratio <= 0.8) {
+          setTrashStage(1); // 80% 이하 → Trash can 2.png
+        } else {
+          setTrashStage(0); // 기본 Trash can.png
+        }
+      };
+
+      const desktopBg = document.querySelector('.desktop-wallpaper');
+      const setBg = (color) => {
+        document.body.style.background = color;
+        if (desktopBg) desktopBg.style.background = color;
+      };
+
+      const lerpColor = (from, to, t) => {
+        const hexToRgb = (hex) => {
+          const h = hex.replace('#', '');
+          return {
+            r: parseInt(h.slice(0, 2), 16),
+            g: parseInt(h.slice(2, 4), 16),
+            b: parseInt(h.slice(4, 6), 16),
+          };
+        };
+        const f = hexToRgb(from);
+        const b = hexToRgb(to);
+        const mix = (a, c) => Math.round(a + (c - a) * t);
+        return `rgb(${mix(f.r, b.r)}, ${mix(f.g, b.g)}, ${mix(f.b, b.b)})`;
+      };
+
+      const updateBackground = (ratio) => {
+        const base = '#5599EC';
+        const dark = '#000000';
+        // ratio: 1 → base, 0 → dark
+        const color = lerpColor(base, dark, 1 - ratio);
+        setBg(color);
+      };
+
+      const updateGauge = () => {
+        const total = svgGroups.length || MAX_HP_BASE;
+        const remaining = Math.max(0, total - bleachedGroups.size);
+        const ratio = Math.max(0, Math.min(1, remaining / total));
+        if (gaugeOverlay) {
+          gaugeOverlay.style.setProperty('--hp-ratio', ratio);
+          gaugeOverlay.style.transform = `scaleX(${ratio})`;
+        }
+        if (gaugeLabel) {
+          const hp = Math.round(ratio * 100);
+          gaugeLabel.textContent = `${hp} Hp`;
+        }
+        updateBackground(ratio);
+        updateTrashStageByGauge(ratio);
+      };
+
+      // 포인터 위치 기록
+      window.addEventListener('pointermove', (event) => {
+        lastPointerPos = { x: event.clientX, y: event.clientY };
+      });
+
+      const openPreview = () => {
+        if (!selectedBtn || !preview || !previewThumb || !previewTitle) return;
+        const img = selectedBtn.querySelector('img');
+        const label = selectedBtn.closest('.desktop-icon')?.querySelector('label');
+        const title = label ? label.textContent : (img?.alt || 'Icon');
+        const fileName = selectedBtn.dataset?.file;
+        const meta = fileName ? ICON_META[fileName] : null;
+        if (img?.src) {
+          previewThumb.src = img.src;
+          previewThumb.alt = title;
+        }
+        previewTitle.textContent = title;
+        if (previewFiledata) {
+          previewFiledata.textContent = meta && meta.impact ? `Coral Impact: ${meta.impact}` : 'File data';
+        }
+        if (previewAbout) {
+          previewAbout.textContent = meta && meta.desc ? meta.desc : 'about';
+        }
+        preview.setAttribute('aria-hidden', 'false');
+        preview.style.display = 'flex';
+      };
+
+      const openPreviewForFile = (fileName, title = '') => {
+        if (!preview || !previewThumb || !previewTitle) return;
+        const encoded = encodeURIComponent(fileName || '');
+        const src = fileName ? `Icon/${encoded}` : '';
+        const meta = fileName ? ICON_META[fileName] : null;
+        if (src) {
+          previewThumb.src = src;
+          previewThumb.alt = title || fileName;
+        }
+        previewTitle.textContent = title || fileName || 'Icon';
+        if (previewFiledata) {
+          previewFiledata.textContent = meta && meta.impact ? `Coral Impact: ${meta.impact}` : 'File data';
+        }
+        if (previewAbout) {
+          previewAbout.textContent = meta && meta.desc ? meta.desc : 'about';
+        }
+        preview.setAttribute('aria-hidden', 'false');
+        preview.style.display = 'flex';
+      };
+
+      const closePreview = () => {
+        if (!preview) return;
+        preview.style.display = 'none';
+        preview.setAttribute('aria-hidden', 'true');
+      };
+
+      if (previewClose) {
+        previewClose.addEventListener('click', closePreview);
+      }
+      if (preview) {
+        preview.addEventListener('click', (e) => {
+          if (e.target === preview || e.target.closest('.preview-close')) closePreview();
+        });
+      }
+      if (trashClose) {
+        trashClose.addEventListener('click', closeTrashModal);
+      }
+      if (trashModal) {
+        trashModal.addEventListener('click', (e) => {
+          if (e.target === trashModal) closeTrashModal();
+        });
+      }
+      if (trashButton) {
+        trashButton.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          openTrashModal();
+        });
+      }
+
+      const openCaption = () => {
+        if (!captionModal) return;
+        captionModal.style.display = 'flex';
+        captionModal.setAttribute('aria-hidden', 'false');
+      };
+      const closeCaption = () => {
+        if (!captionModal) return;
+        captionModal.style.display = 'none';
+        captionModal.setAttribute('aria-hidden', 'true');
+      };
+      if (captionBtn) {
+        captionBtn.addEventListener('click', openCaption);
+      }
+      if (captionClose) {
+        captionClose.addEventListener('click', closeCaption);
+      }
+      if (captionModal) {
+        captionModal.addEventListener('click', (e) => {
+          if (e.target === captionModal) closeCaption();
+        });
+      }
+
+      if (page4Img && page4Detail) {
+        page4Img.addEventListener('click', () => {
+          page4Detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+
+      let currentSlideIdx = 0;
+      const applyTheme = (cardBg, headerBg, borderColor, closeSrc) => {
+        captionHeader?.classList.add('dark');
+        captionHeader.style.background = headerBg;
+        captionHeader.style.borderBottomColor = borderColor;
+        captionCard.style.background = cardBg;
+        captionCard.style.boxShadow = '-2px -2px 4px 0 rgba(0,0,0,0.25) inset';
+        if (captionCloseImg && closeSrc) captionCloseImg.src = closeSrc;
+      };
+
+      const resetTheme = () => {
+        captionHeader?.classList.remove('dark');
+        captionHeader.style.background = 'rgba(217,217,217,0)';
+        captionHeader.style.borderBottomColor = '#000';
+        captionCard.style.background = '#FFF';
+        captionCard.style.boxShadow = '-2px -2px 4px 0 rgba(0,0,0,0.25) inset';
+        if (captionCloseImg) captionCloseImg.src = 'Close.png';
+      };
+
+      const setCaptionTheme = (idx) => {
+        if (!captionHeader || !captionCard) return;
+        currentSlideIdx = idx;
+        if (idx === 4) {
+          applyTheme('#000', '#000', '#fff', 'Caption image/close white.png');
+        } else if (idx === 3) {
+          applyTheme('#36007B', '#36007B', '#fff', 'Caption image/close white.png');
+        } else {
+          resetTheme();
+        }
+      };
+
+      const setPageTheme = (pageIdx) => {
+        // page indices: 0~... , carousel page is 5, page7 is 6, page8 is 7
+        if (pageIdx === 5) {
+          setCaptionTheme(currentSlideIdx);
+        } else if (pageIdx === 7) { // page 8
+          applyTheme('#000', '#000', '#fff', 'Caption image/close white.png');
+        } else {
+          resetTheme();
+        }
+      };
+
+      const scrollToSlide = (index) => {
+        if (!page6Carousel) return;
+        const w = page6Carousel.clientWidth || 1198;
+        page6Carousel.scrollTo({ left: index * w, behavior: 'smooth' });
+        setCaptionTheme(index);
+      };
+
+      const updateSlideThemeOnScroll = () => {
+        if (!page6Carousel) return;
+        const w = page6Carousel.clientWidth || 1198;
+        const idx = Math.round((page6Carousel.scrollLeft || 0) / w);
+        setCaptionTheme(idx);
+      };
+
+      if (page6Carousel) {
+        page6Carousel.addEventListener('scroll', updateSlideThemeOnScroll);
+      }
+
+      document.querySelectorAll('.page6-arrow-next').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const target = Number(btn.dataset.target);
+          if (Number.isFinite(target)) scrollToSlide(target);
+        });
+      });
+      document.querySelectorAll('.page6-arrow-prev').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const target = Number(btn.dataset.target);
+          if (Number.isFinite(target)) scrollToSlide(target);
+        });
+      });
+
+      if (captionFrame) {
+        const updatePageTheme = () => {
+          const h = captionFrame.clientHeight || 764;
+          const raw = captionFrame.scrollTop || 0;
+          const page = Math.floor(raw / h);
+          const frac = (raw / h) - page;
+          const idx = frac > 0.5 ? page + 1 : page; // 절반 정도 넘어가면 다음 페이지 테마로
+          setPageTheme(idx);
+        };
+        captionFrame.addEventListener('scroll', updatePageTheme);
+        updatePageTheme(); // 초기 호출
+      }
+
+      const getStageKey = () => {
+        const total = svgGroups.length || MAX_HP_BASE;
+        const remaining = Math.max(0, total - bleachedGroups.size);
+        if (remaining > total * 0.8) return 'base';      // Stage 1 (80% 초과)
+        if (remaining > total * 0.4) return 'stage2';    // Stage 2 (40~80%)
+        return 'stage3';                                 // Stage 3 (40% 이하)
+      };
+
+      const getDamageForIcon = (fileName) => {
+        const stageKey = getStageKey();
+        const meta = fileName ? ICON_DAMAGE[fileName] : null;
+        if (meta && typeof meta[stageKey] === 'number') return meta[stageKey];
+        // fallback 값: 대략 200 → 400 → 800
+        const base = 200;
+        if (stageKey === 'stage2') return base * 2;
+        if (stageKey === 'stage3') return base * 4;
+        return base;
+      };
+
+      const bleachByIcon = (fileName) => {
+        const dmg = getDamageForIcon(fileName);
+        bleachRandomGroups(dmg);
+      };
+
+      const bleachRandomGroups = (groupCount = 3000) => {
+        if (!svgGroups.length) return;
+        const remaining = [];
+        for (const g of svgGroups) {
+          if (!bleachedGroups.has(g.key)) remaining.push(g);
+        }
+        const maxGroups = Math.min(groupCount, remaining.length);
+        for (let i = 0; i < maxGroups; i++) {
+          const pick = Math.floor(Math.random() * remaining.length);
+          const group = remaining.splice(pick, 1)[0];
+          if (!group) continue;
+          for (const item of group.nodes) {
+            const { node, fill } = item;
+            const rgb = fill && fill.toLowerCase();
+            if (!rgb || rgb !== '#ffe100') continue; // 안전하게 현재 색 재확인
+            node.classList.add('bleached');
+            node.setAttribute('fill', '#ffffff');
+            node.setAttribute('opacity', '1');
+            if (node.style) {
+              node.style.fill = '#ffffff';
+              node.style.opacity = '1';
+            }
+          }
+          bleachedGroups.add(group.key);
+        }
+        updateGauge();
+      };
+
+      // Custom context menu (right-click)
+      const menu = document.createElement('div');
+      menu.className = 'context-menu';
+      menu.innerHTML = `<span class="label">create new trash</span><span class="shortcut">N</span>`;
+      document.body.appendChild(menu);
+
+      const hideMenu = () => {
+        menu.style.display = 'none';
+      };
+
+      menu.addEventListener('click', (event) => {
+        event.stopPropagation();
+        hideMenu();
+        addIcon(lastContextPos.x, lastContextPos.y);
+      });
+
+      window.addEventListener('click', hideMenu);
+      window.addEventListener('scroll', hideMenu, true);
+      window.addEventListener('resize', hideMenu);
+
+      document.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        const x = (event.pageX || event.clientX) + 16;
+        const y = (event.pageY || event.clientY) + 16;
+        lastContextPos = { x, y };
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
+        menu.style.display = 'flex';
+      });
+
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'n' || event.key === 'N') {
+          event.preventDefault();
+          hideMenu();
+          addIcon(lastPointerPos.x, lastPointerPos.y);
+        } else if (event.key === ' ' || event.key === 'Spacebar') {
+          event.preventDefault();
+          openPreview();
+        } else if (event.key === 'Escape' || event.key === 'Esc') {
+          closePreview();
+        }
+      });
+
+      // 중앙 SVG 로드 및 대상 수집 (아이들 타임 + 배치 처리로 초기 렉 완화)
+      const svgHolder = document.getElementById('svg-holder');
+      const loadSvgTargets = () => {
+        if (!svgHolder) return;
+        fetch('coralyellow.svg')
+          .then(res => res.text())
+          .then(text => {
+            svgHolder.innerHTML = text;
+            const svg = svgHolder.querySelector('svg');
+            if (!svg) return;
+
+            const isTargetYellowRaw = (raw) => {
+              if (!raw) return false;
+              const v = raw.trim().toLowerCase();
+              return v === '#ffe100' || v === 'rgb(255, 225, 0)' || v === 'rgb(255,225,0)';
+            };
+
+            const rects = Array.from(svg.querySelectorAll('rect'));
+            const total = rects.length;
+            const groupMap = new Map();
+
+            const processBatch = (start = 0) => {
+              const end = Math.min(start + 600, total);
+              for (let i = start; i < end; i++) {
+                const node = rects[i];
+                if (!node) continue;
+                const fillRaw = node.getAttribute('fill') || (node.style && node.style.fill);
+                if (!isTargetYellowRaw(fillRaw)) continue;
+                const nodeOpacity = node.getAttribute('opacity') || (node.style && node.style.opacity);
+                if (nodeOpacity !== null && nodeOpacity !== undefined) {
+                  const opNum = parseFloat(nodeOpacity);
+                  if (Number.isFinite(opNum) && opNum <= 0) continue;
+                }
+                const group = node.closest('g');
+                const key = (group && (group.getAttribute('data-group') || group.getAttribute('id'))) || group || node;
+                if (!groupMap.has(key)) groupMap.set(key, []);
+                groupMap.get(key).push({ node, fill: fillRaw });
+              }
+              if (end < total) {
+                const cb = typeof requestIdleCallback === 'function' ? requestIdleCallback : setTimeout;
+                cb(() => processBatch(end), 0);
+              } else {
+                svgGroups = Array.from(groupMap.entries()).map(([key, nodes]) => ({ key, nodes }));
+                console.info('SVG groups (#ffe100) loaded:', svgGroups.length);
+                updateGauge();
+              }
+            };
+
+            processBatch(0);
+          })
+          .catch(err => {
+            console.warn('SVG 로드 실패', err);
+          });
+      };
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(loadSvgTargets, { timeout: 1000 });
+      } else {
+        setTimeout(loadSvgTargets, 200);
+      }
+    });
+  </script>
+</body>
+</html>
